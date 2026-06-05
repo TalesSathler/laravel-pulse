@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: composer install --no-dev --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: composer install --no-dev --no-interaction --prefer-dist --no-scripts
+      - run: php artisan key:generate --ansi
       - run: npm ci
       - run: npm run build
