@@ -20,6 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: cp .env.example .env
+      - run: echo "APP_ENV=production" >> .env
       - run: composer install --no-dev --no-interaction --prefer-dist --no-scripts
       - run: php artisan key:generate --ansi
       - run: npm ci
