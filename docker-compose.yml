@@ -1,0 +1,138 @@
+networks:
+    laravel-pulse-network:
+        driver: bridge
+
+volumes:
+    postgres-data:
+    postgres-pulse-data:
+
+
+services:
+    traefik:
+        image: traefik:v3.7
+        container_name: laravel-pulse-traefik
+        command:
+            - "--api.insecure=true"
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--entrypoints.web.address=:80"
+            - "--accesslog=true"
+            - "--metrics.prometheus=true"
+            - "--tracing.otlp=true"
+            - "--tracing.otlp.grpc=false"
+        ports:
+            - "80:80"
+            - "8080:8080"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        networks:
+            - laravel-pulse-network
+
+    database:
+        image: postgres:16
+        container_name: laravel-pulse-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: ${DB_USERNAME:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+            POSTGRES_DB: ${DB_DATABASE:-laravel_pulse}
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        networks:
+            - laravel-pulse-network
+        ports:
+            - "5432:5432"
+
+    database-pulse:
+        image: postgres:16
+        container_name: laravel-pulse-postgres-dedicated
+        restart: always
+        environment:
+            POSTGRES_USER: ${DB_USERNAME:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+            POSTGRES_DB: ${DB_PULSE_DATABASE:-pulse}
+        volumes:
+            - postgres-pulse-data:/var/lib/postgresql/data
+        networks:
+            - laravel-pulse-network
+        ports:
+            - "5433:5432"
+
+    cache:
+        image: redis:alpine
+        container_name: laravel-pulse-redis
+        restart: always
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+            start_period: 10s
+        networks:
+            - laravel-pulse-network
+
+    app:
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile
+            target: production
+        restart: always
+        deploy:
+            replicas: 2
+        volumes:
+            - './:/var/www'
+        networks:
+            - laravel-pulse-network
+
+    vite:
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile
+            target: production
+        container_name: laravel-pulse-vite
+        environment:
+            - CONTAINER_ROLE=vite
+        ports:
+            - "5173:5173"
+        volumes:
+            - ./:/var/www
+        networks:
+            - laravel-pulse-network
+
+    webserver:
+        image: nginx:alpine
+        restart: always
+        deploy:
+            replicas: 2
+        # Remove the ports block entirely from this section
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - laravel-pulse-network
+        depends_on:
+            - app
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.laravel-web.rule=Host(`laravel-pulse.localhost`)"
+            - "traefik.http.routers.laravel-web.entrypoints=web"
+            - "traefik.http.services.laravel-web.loadbalancer.server.port=80"
+
+    worker:
+        container_name: laravel-pulse-worker
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile
+            target: production
+        command: [ "/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf" ]
+        restart: always
+        volumes:
+            - ./:/var/www
+            - ./docker/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+        networks:
+            - laravel-pulse-network
+        depends_on:
+            app:
+                condition: service_started
+            cache:
+                condition: service_healthy
