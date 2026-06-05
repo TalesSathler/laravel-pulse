@@ -36,7 +36,10 @@
 
         @fonts
 
-        @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
+        @vite(['resources/css/app.css', 'resources/js/app.ts'])
+        @if (file_exists(public_path('/hot')))
+            @vite(["resources/js/pages/{$page['component']}.vue"])
+        @endif
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
