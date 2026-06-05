@@ -64,6 +64,7 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <base href="{base_url}">
             <script>(function(){{const e=window.matchMedia("(prefers-color-scheme: dark)");e.matches&&document.documentElement.classList.add("dark")}})()</script>
             <link rel="icon" href="favicon.ico" sizes="any">
             <link rel="icon" href="favicon.svg" type="image/svg+xml">
