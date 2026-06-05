@@ -16,11 +16,15 @@ declare module 'vite/client' {
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
+            appEnv: string;
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            flash: { success: string | null };
             [key: string]: unknown;
         };
+
+    export type PageProps = InertiaConfig['sharedPageProps'];
     }
 }
 

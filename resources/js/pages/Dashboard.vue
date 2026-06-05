@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { Activity, AlertTriangle, BookOpen, Clock, Database, ExternalLink, Radar, Send, Server, Zap, LoaderCircle } from '@lucide/vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription } from '@/components/ui/card';
 import { toUrl } from '@/lib/utils';
-import { dashboard, pulse, telescope } from '@/routes';
+import { dashboard, pulse } from '@/routes';
 import { index as horizon } from '@/routes/horizon';
+import type { PageProps } from '@/types';
+
+const page = usePage<PageProps>();
+const isLocal = computed(() => page.props.appEnv === 'local');
+
+const items = computed(() => [
+    { title: 'Pulse', description: 'Application performance and health monitoring', href: pulse(), icon: Activity },
+    { title: 'Horizon', description: 'Queue worker monitoring and management', href: horizon(), icon: Radar },
+    ...(isLocal.value
+        ? [{ title: 'Telescope', description: 'Request debugging and insights', href: '/telescope', icon: BookOpen }]
+        : []),
+    { title: 'Traefik', description: 'Reverse proxy dashboard and routing', href: 'http://localhost:8080/', icon: Server },
+]);
 
 defineOptions({
     layout: {
@@ -59,14 +72,9 @@ const dispatchDemoJob = () => {
     <div
         class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
     >
-        <div class="grid auto-rows-min gap-4 md:grid-cols-3">
+                <div class="grid auto-rows-min gap-4 md:grid-cols-3">
             <a
-                v-for="item in [
-                    { title: 'Pulse', description: 'Application performance and health monitoring', href: pulse(), icon: Activity },
-                    { title: 'Horizon', description: 'Queue worker monitoring and management', href: horizon(), icon: Radar },
-                    { title: 'Telescope', description: 'Request debugging and insights', href: telescope(), icon: BookOpen },
-                    { title: 'Traefik', description: 'Reverse proxy dashboard and routing', href: 'http://localhost:8080/', icon: Server },
-                ]"
+                v-for="item in items"
                 :key="item.title"
                 :href="toUrl(item.href)"
                 target="_blank"

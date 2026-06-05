@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { Activity, BookOpen, FolderGit2, Home, LayoutGrid, Radar, Server } from '@lucide/vue';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -14,46 +15,55 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, home, pulse, telescope } from '@/routes';
+import { dashboard, home, pulse } from '@/routes';
 import { index as horizon } from '@/routes/horizon';
-import type { NavItem } from '@/types';
+import type { NavItem, PageProps } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Welcome',
-        href: home(),
-        icon: Home,
-    },
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Pulse',
-        href: pulse(),
-        icon: Activity,
-        target: '_blank',
-    },
-    {
-        title: 'Horizon',
-        href: horizon(),
-        icon: Radar,
-        target: '_blank',
-    },
-    {
-        title: 'Telescope',
-        href: telescope(),
-        icon: BookOpen,
-        target: '_blank',
-    },
-    {
-        title: 'Traefik',
-        href: 'http://localhost:8080/',
-        icon: Server,
-        target: '_blank',
-    },
-];
+const page = usePage<PageProps>();
+
+const mainNavItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        {
+            title: 'Welcome',
+            href: home(),
+            icon: Home,
+        },
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Pulse',
+            href: pulse(),
+            icon: Activity,
+            target: '_blank',
+        },
+        {
+            title: 'Horizon',
+            href: horizon(),
+            icon: Radar,
+            target: '_blank',
+        },
+        {
+            title: 'Traefik',
+            href: 'http://localhost:8080/',
+            icon: Server,
+            target: '_blank',
+        },
+    ];
+
+    if (page.props.appEnv === 'local') {
+        items.splice(4, 0, {
+            title: 'Telescope',
+            href: '/telescope',
+            icon: BookOpen,
+            target: '_blank',
+        });
+    }
+
+    return items;
+});
 
 const footerNavItems: NavItem[] = [
     {
