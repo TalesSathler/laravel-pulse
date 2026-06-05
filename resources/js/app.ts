@@ -10,7 +10,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolveComponent: (name) => {
+    resolve: (name) => {
         const pages = import.meta.glob('./pages/**/*.vue', { eager: true });
         return pages[`./pages/${name}.vue`];
     },
