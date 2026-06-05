@@ -1,13 +1,23 @@
-name: Build
+name: Build & Deploy
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  vite:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,3 +35,48 @@ jobs:
       - run: php artisan key:generate --ansi
       - run: npm ci
       - run: npm run build
+      - name: Generate static index.html
+        run: |
+          python3 << 'PYEOF'
+          import json
+          with open("public/build/manifest.json") as f:
+              m = json.load(f)["resources/js/app.ts"]
+          css = m["css"][0]
+          js = m["file"]
+          page = json.dumps({
+              "component": "Welcome",
+              "props": {
+                  "auth": {"user": None},
+                  "flash": {"success": None},
+                  "name": "Laravel Pulse",
+                  "sidebarOpen": True,
+                  "appEnv": "production",
+              },
+              "url": "/",
+              "version": "",
+          })
+          html = f"""<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <script>(function(){{const e=window.matchMedia("(prefers-color-scheme: dark)");e.matches&&document.documentElement.classList.add("dark")}})()</script>
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+            <link rel="stylesheet" href="{css}">
+          </head>
+          <body class="font-sans antialiased">
+            <div id="app" data-page='{page}'></div>
+            <script type="module" src="{js}"></script>
+          </body>
+          </html>"""
+          with open("public/build/index.html", "w") as f:
+              f.write(html)
+          PYEOF
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/build
+      - uses: actions/deploy-pages@v4
+        if: github.event_name != 'pull_request'
