@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import { createApp, h } from 'vue';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -9,6 +10,10 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
+    resolveComponent: (name) => {
+        const pages = import.meta.glob('./pages/**/*.vue', { eager: true });
+        return pages[`./pages/${name}.vue`];
+    },
     layout: (name) => {
         switch (true) {
             case name === 'Welcome':
@@ -21,13 +26,13 @@ createInertiaApp({
                 return AppLayout;
         }
     },
+    setup({ el, App, props, plugin }) {
+        createApp({ render: () => h(App, props) }).use(plugin).mount(el);
+    },
     progress: {
         color: '#4B5563',
     },
 });
 
-// This will set light / dark mode on page load...
 initializeTheme();
-
-// This will listen for flash toast data from the server...
 initializeFlashToast();
