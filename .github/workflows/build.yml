@@ -42,9 +42,11 @@ jobs:
           python3 << 'PYEOF'
           import json
           with open("public/build/manifest.json") as f:
-              m = json.load(f)["resources/js/app.ts"]
-          css = m["css"][0]
-          js = m["file"]
+              manifest = json.load(f)
+          app_entry = manifest["resources/js/app.ts"]
+          css_app = manifest["resources/css/app.css"]["file"]
+          css_vue = app_entry["css"][0]
+          js = app_entry["file"]
           import os
           base_url = os.environ.get("PAGES_BASE_URL", "/laravel-pulse") + "/"
           page = json.dumps({
@@ -69,7 +71,8 @@ jobs:
             <link rel="icon" href="favicon.ico" sizes="any">
             <link rel="icon" href="favicon.svg" type="image/svg+xml">
             <link rel="apple-touch-icon" href="apple-touch-icon.png">
-            <link rel="stylesheet" href="{css}">
+            <link rel="stylesheet" href="{css_app}">
+            <link rel="stylesheet" href="{css_vue}">
           </head>
           <body class="font-sans antialiased">
             <div id="app"></div>
