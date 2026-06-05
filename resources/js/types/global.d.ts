@@ -23,9 +23,9 @@ declare module '@inertiajs/core' {
             flash: { success: string | null };
             [key: string]: unknown;
         };
+    }
 
     export type PageProps = InertiaConfig['sharedPageProps'];
-    }
 }
 
 declare module 'vue' {
